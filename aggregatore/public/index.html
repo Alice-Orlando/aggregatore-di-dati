@@ -2,132 +2,62 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Convertitore File</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 30px;
-      max-width: 650px;
-      margin: auto;
-      line-height: 1.6;
-      background: #f5f7fa;
-    }
-
-    h1 { color: #333; margin-bottom: 5px; }
-    p.sottotitolo { color: #666; margin-bottom: 25px; }
-
-    .box {
-      border: 1px solid #ddd;
-      padding: 20px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      background: white;
-    }
-
-    label { font-weight: bold; display: block; margin-bottom: 6px; }
-
-    input[type="file"] {
-      width: 100%;
-      padding: 8px;
-      border: 2px dashed #aaa;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #fafafa;
-    }
-
-    select {
-      width: 100%;
-      padding: 9px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 15px;
-      margin-top: 4px;
-    }
-
-    button {
-      cursor: pointer;
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 22px;
-      border-radius: 5px;
-      font-size: 15px;
-      margin-top: 10px;
-    }
-
-    button:hover { background: #0056b3; }
-    button:disabled { background: #aaa; cursor: not-allowed; }
-
-    #messaggio {
-      margin-top: 15px;
-      padding: 12px 16px;
-      border-radius: 6px;
-      display: none;
-      font-size: 14px;
-    }
-
-    .successo { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .errore   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 9px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-left: 5px;
-    }
-    .badge-json { background: #fff3cd; color: #856404; }
-    .badge-xml  { background: #cce5ff; color: #004085; }
-    .badge-csv  { background: #d4edda; color: #155724; }
-
-    #infoFile {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #555;
-      display: none;
-    }
-
-    .freccia {
-      text-align: center;
-      font-size: 28px;
-      color: #888;
-      margin: 5px 0;
-    }
-  </style>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
 </head>
-<body>
+<body class="bg-light py-5">
 
-  <h1>🔄 Convertitore File</h1>
-  <p class="sottotitolo">Carica un file <strong>JSON</strong>, <strong>XML</strong> o <strong>CSV</strong> e convertilo nel formato che vuoi.</p>
+  <div class="container" style="max-width: 650px;">
 
-  <!-- STEP 1: carica il file -->
-  <div class="box">
-    <label>① Carica il file sorgente</label>
-    <input type="file" id="fileInput" accept=".json,.xml,.csv">
-    <div id="infoFile"></div>
-  </div>
+    <h1 class="mb-1">🔄 Convertitore File</h1>
+    <p class="text-secondary mb-4">
+      Carica un file <strong>JSON</strong>, <strong>XML</strong> o <strong>CSV</strong>
+      e convertilo nel formato che vuoi.
+    </p>
 
-  <div class="freccia">↓</div>
+    <!-- STEP 1: carica il file -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <label class="form-label fw-bold">① Carica il file sorgente</label>
+        <input type="file" id="fileInput" accept=".json,.xml,.csv" class="form-control">
+        <div id="infoFile" class="mt-2 small text-secondary d-none"></div>
+      </div>
+    </div>
 
-  <!-- STEP 2: scegli il formato -->
-  <div class="box">
-    <label for="formatoDestinazione">② Scegli il formato di destinazione</label>
-    <select id="formatoDestinazione">
-      <option value="">-- seleziona --</option>
-      <option value="json">JSON</option>
-      <option value="xml">XML</option>
-      <option value="csv">CSV</option>
-    </select>
-  </div>
+    <div class="text-center fs-4 text-secondary mb-3">↓</div>
 
-  <div class="freccia">↓</div>
+    <!-- STEP 2: scegli il formato -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <label for="formatoDestinazione" class="form-label fw-bold">
+          ② Scegli il formato di destinazione
+        </label>
+        <select id="formatoDestinazione" class="form-select">
+          <option value="">-- seleziona --</option>
+          <option value="json">JSON</option>
+          <option value="xml">XML</option>
+          <option value="csv">CSV</option>
+        </select>
+      </div>
+    </div>
 
-  <!-- STEP 3: converti -->
-  <div class="box">
-    <label>③ Converti e scarica</label><br>
-    <button id="btnConverti" onclick="converti()" disabled>Converti</button>
-    <div id="messaggio"></div>
+    <div class="text-center fs-4 text-secondary mb-3">↓</div>
+
+    <!-- STEP 3: converti -->
+    <div class="card">
+      <div class="card-body">
+        <label class="form-label fw-bold">③ Converti e scarica</label><br>
+        <button id="btnConverti" onclick="converti()" disabled class="btn btn-primary mt-1">
+          Converti
+        </button>
+        <div id="messaggio" class="alert mt-3 d-none" role="alert"></div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -136,7 +66,6 @@
     const btnConv    = document.getElementById('btnConverti');
     const infoFile   = document.getElementById('infoFile');
 
-    // Aggiorna info file e stato pulsante
     fileInput.addEventListener('change', aggiornaStato);
     formatoSel.addEventListener('change', aggiornaStato);
 
@@ -146,65 +75,57 @@
 
       if (file) {
         const ext = file.name.split('.').pop().toLowerCase();
-        const colori = { json: 'badge-json', xml: 'badge-xml', csv: 'badge-csv' };
-        infoFile.style.display = 'block';
+        const badgeClass = { json: 'text-bg-warning', xml: 'text-bg-primary', csv: 'text-bg-success' };
+        infoFile.classList.remove('d-none');
         infoFile.innerHTML =
           `File selezionato: <strong>${file.name}</strong>` +
-          ` <span class="badge ${colori[ext] || ''}">${ext.toUpperCase()}</span>` +
+          ` <span class="badge ${badgeClass[ext] || 'text-bg-secondary'}">${ext.toUpperCase()}</span>` +
           ` — ${(file.size / 1024).toFixed(1)} KB`;
       } else {
-        infoFile.style.display = 'none';
+        infoFile.classList.add('d-none');
       }
 
-      // Abilita il pulsante solo se entrambe le scelte sono fatte
       btnConv.disabled = !(file && formato);
     }
 
     async function converti() {
       const file    = fileInput.files[0];
       const formato = formatoSel.value;
-      const msg     = document.getElementById('messaggio');
 
       if (!file || !formato) {
-        mostraMessaggio('Seleziona un file e un formato di destinazione!', 'errore');
+        mostraMessaggio('Seleziona un file e un formato di destinazione!', 'danger');
         return;
       }
 
       btnConv.disabled    = true;
       btnConv.textContent = 'Conversione in corso...';
 
-      // Prepara il form con il file e il formato scelto
       const formData = new FormData();
       formData.append('file', file);
       formData.append('formatoDestinazione', formato);
 
       try {
-        const res = await fetch('/converti', {
-          method: 'POST',
-          body: formData   // NON impostare Content-Type: lo fa il browser da solo con multipart
-        });
+        const res = await fetch('/converti', { method: 'POST', body: formData });
 
         if (!res.ok) {
-          // L'errore arriva come JSON dal server
           const errore = await res.json();
-          mostraMessaggio('Errore: ' + errore.errore, 'errore');
+          mostraMessaggio('Errore: ' + errore.errore, 'danger');
           return;
         }
 
-        // Scarica il file risultante
         const blob     = await res.blob();
         const url      = URL.createObjectURL(blob);
         const link     = document.createElement('a');
-        const nomeOrig = file.name.replace(/\.[^.]+$/, ''); // rimuove l'estensione
+        const nomeOrig = file.name.replace(/\.[^.]+$/, '');
         link.href      = url;
         link.download  = nomeOrig + '_convertito.' + formato;
         link.click();
         URL.revokeObjectURL(url);
 
-        mostraMessaggio('✅ File convertito e scaricato!', 'successo');
+        mostraMessaggio('✅ File convertito e scaricato!', 'success');
 
       } catch (err) {
-        mostraMessaggio('Errore di connessione al server.', 'errore');
+        mostraMessaggio('Errore di connessione al server.', 'danger');
       } finally {
         btnConv.disabled    = false;
         btnConv.textContent = 'Converti';
@@ -212,10 +133,10 @@
     }
 
     function mostraMessaggio(testo, tipo) {
-      const msg       = document.getElementById('messaggio');
+      const msg = document.getElementById('messaggio');
       msg.textContent = testo;
-      msg.className   = tipo;
-      msg.style.display = 'block';
+      msg.className   = `alert alert-${tipo} mt-3`;
+      msg.classList.remove('d-none');
     }
   </script>
 
