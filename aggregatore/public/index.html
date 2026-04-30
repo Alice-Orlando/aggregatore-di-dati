@@ -4,61 +4,390 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Convertitore File</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  >
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-width: 300px;
+    }
+
+    body {
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: #1e1e2e;
+      color: #cdd6f4;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 100;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.18);
+    }
+
+    #sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid #313244;
+      background: #181825;
+    }
+
+    #sidebar-header h6 {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6c7086;
+      margin: 0 0 4px;
+    }
+
+    #sidebar-header .title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #cdd6f4;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #sidebar-header .title i {
+      color: #89b4fa;
+    }
+
+    #sidebar-count {
+      font-size: 0.72rem;
+      color: #6c7086;
+      margin-top: 2px;
+    }
+
+    #file-list-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+    }
+
+    #file-list-wrapper::-webkit-scrollbar { width: 4px; }
+    #file-list-wrapper::-webkit-scrollbar-track { background: transparent; }
+    #file-list-wrapper::-webkit-scrollbar-thumb { background: #313244; border-radius: 2px; }
+
+    .file-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid #181825;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: background 0.15s;
+    }
+
+    .file-item:hover {
+      background: #2a2a3e;
+    }
+
+    .file-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+      min-width: 36px;
+      text-align: center;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .badge-json { background: #f9e2af; color: #1e1e2e; }
+    .badge-csv  { background: #a6e3a1; color: #1e1e2e; }
+    .badge-xml  { background: #89b4fa; color: #1e1e2e; }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 0.82rem;
+      color: #cdd6f4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+
+    .file-meta {
+      font-size: 0.7rem;
+      color: #6c7086;
+      margin-top: 2px;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      padding: 4px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+
+    .btn-dl  { color: #89b4fa; }
+    .btn-dl:hover  { background: #313244; color: #b4d0ff; }
+    .btn-del { color: #f38ba8; }
+    .btn-del:hover { background: #3a1e24; color: #ff8fa3; }
+
+    #sidebar-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #45475a;
+    }
+
+    #sidebar-empty i {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    #sidebar-empty p {
+      font-size: 0.8rem;
+      margin: 0;
+    }
+
+    #sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #313244;
+      background: #181825;
+    }
+
+    #btn-clear-all {
+      width: 100%;
+      font-size: 0.75rem;
+      padding: 6px;
+      background: none;
+      border: 1px solid #45475a;
+      color: #f38ba8;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    #btn-clear-all:hover {
+      background: #3a1e24;
+      border-color: #f38ba8;
+    }
+
+    #btn-clear-all:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* ── MAIN CONTENT ── */
+    #main-content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 40px 30px;
+      max-width: 680px;
+    }
+
+    .converter-card {
+      background: #fff;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .step-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #89b4fa;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .step-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e8f0fe;
+      color: #3b82f6;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    h1.main-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1e1e2e;
+    }
+
+    .divider-arrow {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 1.2rem;
+      margin: 4px 0;
+    }
+
+    /* Toast notification */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast-msg {
+      background: #313244;
+      color: #cdd6f4;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideIn 0.2s ease;
+    }
+
+    .toast-msg.success { border-left: 3px solid #a6e3a1; }
+    .toast-msg.error   { border-left: 3px solid #f38ba8; }
+
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    /* Delete confirmation overlay */
+    .delete-confirm {
+      background: #1e1e2e;
+      border: 1px solid #f38ba8;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 0 10px 6px;
+      font-size: 0.78rem;
+      color: #cdd6f4;
+    }
+
+    .delete-confirm .btn-confirm-yes {
+      background: #f38ba8;
+      color: #1e1e2e;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .delete-confirm .btn-confirm-no {
+      background: #313244;
+      color: #cdd6f4;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* Spinner sidebar */
+    .sidebar-spinner {
+      text-align: center;
+      padding: 30px;
+      color: #45475a;
+    }
+  </style>
 </head>
-<body class="bg-light py-5">
+<body>
 
-  <div class="container" style="max-width: 650px;">
+  <!-- ══════════════════════════════════
+       SIDEBAR SINISTRA
+  ══════════════════════════════════ -->
+  <nav id="sidebar">
+    <div id="sidebar-header">
+      <h6>Convertitore File</h6>
+      <div class="title"><i class="bi bi-archive-fill"></i> File Scaricati</div>
+      <div id="sidebar-count">Caricamento…</div>
+    </div>
 
-    <h1 class="mb-1">🔄 Convertitore File</h1>
+    <div id="file-list-wrapper">
+      <div class="sidebar-spinner">
+        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+      </div>
+    </div>
+
+    <div id="sidebar-footer">
+      <button id="btn-clear-all" disabled onclick="eliminaTutti()">
+        <i class="bi bi-trash3"></i> Elimina tutti i file
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════
+       CONTENUTO PRINCIPALE
+  ══════════════════════════════════ -->
+  <div id="main-content">
+
+    <h1 class="main-title mb-1">🔄 Convertitore File</h1>
     <p class="text-secondary mb-4">
       Carica un file <strong>JSON</strong>, <strong>XML</strong> o <strong>CSV</strong>
       e convertilo nel formato che vuoi.
     </p>
 
-    <!-- STEP 1: carica il file -->
-    <div class="card mb-3">
-      <div class="card-body">
-        <label class="form-label fw-bold">① Carica il file sorgente</label>
-        <input type="file" id="fileInput" accept=".json,.xml,.csv" class="form-control">
-        <div id="infoFile" class="mt-2 small text-secondary d-none"></div>
-      </div>
+    <!-- STEP 1 -->
+    <div class="converter-card p-4 mb-3">
+      <span class="step-label"><span class="step-icon">1</span>Carica il file sorgente</span>
+      <input type="file" id="fileInput" accept=".json,.xml,.csv" class="form-control mt-1">
+      <div id="infoFile" class="mt-2 small text-secondary d-none"></div>
     </div>
 
-    <div class="text-center fs-4 text-secondary mb-3">↓</div>
+    <div class="divider-arrow">↓</div>
 
-    <!-- STEP 2: scegli il formato -->
-    <div class="card mb-3">
-      <div class="card-body">
-        <label for="formatoDestinazione" class="form-label fw-bold">
-          ② Scegli il formato di destinazione
-        </label>
-        <select id="formatoDestinazione" class="form-select">
-          <option value="">-- seleziona --</option>
-          <option value="json">JSON</option>
-          <option value="xml">XML</option>
-          <option value="csv">CSV</option>
-        </select>
-      </div>
+    <!-- STEP 2 -->
+    <div class="converter-card p-4 mb-3">
+      <span class="step-label"><span class="step-icon">2</span>Scegli il formato di destinazione</span>
+      <select id="formatoDestinazione" class="form-select mt-1">
+        <option value="">-- seleziona --</option>
+        <option value="json">JSON</option>
+        <option value="xml">XML</option>
+        <option value="csv">CSV</option>
+      </select>
     </div>
 
-    <div class="text-center fs-4 text-secondary mb-3">↓</div>
+    <div class="divider-arrow">↓</div>
 
-    <!-- STEP 3: converti -->
-    <div class="card">
-      <div class="card-body">
-        <label class="form-label fw-bold">③ Converti e scarica</label><br>
-        <button id="btnConverti" onclick="converti()" disabled class="btn btn-primary mt-1">
-          Converti
-        </button>
-        <div id="messaggio" class="alert mt-3 d-none" role="alert"></div>
-      </div>
+    <!-- STEP 3 -->
+    <div class="converter-card p-4">
+      <span class="step-label"><span class="step-icon">3</span>Converti e scarica</span>
+      <button id="btnConverti" onclick="converti()" disabled class="btn btn-primary mt-2 px-4">
+        <i class="bi bi-arrow-repeat me-1"></i> Converti
+      </button>
+      <div id="messaggio" class="alert mt-3 d-none" role="alert"></div>
     </div>
 
   </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
 
   <script>
     const fileInput  = document.getElementById('fileInput');
@@ -69,6 +398,7 @@
     fileInput.addEventListener('change', aggiornaStato);
     formatoSel.addEventListener('change', aggiornaStato);
 
+    // ── Aggiorna stato bottone Converti ──
     function aggiornaStato() {
       const file    = fileInput.files[0];
       const formato = formatoSel.value;
@@ -88,6 +418,7 @@
       btnConv.disabled = !(file && formato);
     }
 
+    // ── Conversione ──
     async function converti() {
       const file    = fileInput.files[0];
       const formato = formatoSel.value;
@@ -98,7 +429,7 @@
       }
 
       btnConv.disabled    = true;
-      btnConv.textContent = 'Conversione in corso...';
+      btnConv.innerHTML   = '<span class="spinner-border spinner-border-sm me-1"></span> Conversione…';
 
       const formData = new FormData();
       formData.append('file', file);
@@ -123,21 +454,170 @@
         URL.revokeObjectURL(url);
 
         mostraMessaggio('✅ File convertito e scaricato!', 'success');
+        toast('✅ File salvato nella lista', 'success');
+
+        // Aggiorna la sidebar dopo conversione
+        setTimeout(caricaFileList, 600);
 
       } catch (err) {
         mostraMessaggio('Errore di connessione al server.', 'danger');
       } finally {
-        btnConv.disabled    = false;
-        btnConv.textContent = 'Converti';
+        btnConv.disabled  = false;
+        btnConv.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Converti';
       }
     }
 
+    // ── Carica lista file nella sidebar ──
+    async function caricaFileList() {
+      const wrapper = document.getElementById('file-list-wrapper');
+      const count   = document.getElementById('sidebar-count');
+      const btnClear = document.getElementById('btn-clear-all');
+
+      try {
+        const res   = await fetch('/files');
+        const files = await res.json();
+
+        if (!Array.isArray(files) || files.length === 0) {
+          wrapper.innerHTML = `
+            <div id="sidebar-empty">
+              <i class="bi bi-inbox"></i>
+              <p>Nessun file ancora.<br>Converti qualcosa per iniziare!</p>
+            </div>`;
+          count.textContent = '0 file';
+          btnClear.disabled = true;
+          return;
+        }
+
+        count.textContent = `${files.length} file${files.length > 1 ? '' : ''}`;
+        btnClear.disabled = false;
+
+        wrapper.innerHTML = files.map(f => {
+          const ext  = f.nome.split('.').pop().toLowerCase();
+          const size = f.dimensione < 1024
+            ? f.dimensione + ' B'
+            : (f.dimensione / 1024).toFixed(1) + ' KB';
+          const data = new Date(f.data).toLocaleString('it-IT', {
+            day: '2-digit', month: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+          });
+
+          return `
+            <div class="file-item" id="item-${CSS.escape(f.nome)}">
+              <span class="file-badge badge-${ext}">${ext.toUpperCase()}</span>
+              <div class="file-info">
+                <div class="file-name" title="${f.nome}">${f.nome}</div>
+                <div class="file-meta">${size} · ${data}</div>
+              </div>
+              <div class="file-actions">
+                <button class="btn-icon btn-dl" title="Scarica" onclick="scaricaFile('${f.nome}')">
+                  <i class="bi bi-download"></i>
+                </button>
+                <button class="btn-icon btn-del" title="Elimina" onclick="chiediConfermaElimina('${f.nome}')">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </div>`;
+        }).join('');
+
+      } catch (err) {
+        wrapper.innerHTML = `<div class="p-3 text-danger" style="font-size:.8rem">Errore nel caricare la lista.</div>`;
+        count.textContent = '';
+      }
+    }
+
+    // ── Scarica file dalla lista ──
+    function scaricaFile(nome) {
+      const link = document.createElement('a');
+      link.href  = `/files/${encodeURIComponent(nome)}`;
+      link.download = nome;
+      link.click();
+      toast(`⬇️ Download di ${nome}`, 'success');
+    }
+
+    // ── Conferma eliminazione ──
+    function chiediConfermaElimina(nome) {
+      // Rimuovi eventuali conferme già aperte
+      document.querySelectorAll('.delete-confirm').forEach(el => el.remove());
+
+      const item = document.getElementById('item-' + CSS.escape(nome));
+      if (!item) return;
+
+      const confirm = document.createElement('div');
+      confirm.className = 'delete-confirm';
+      confirm.innerHTML = `
+        <div class="mb-2">Eliminare <strong>${nome}</strong>?</div>
+        <div class="d-flex gap-2">
+          <button class="btn-confirm-yes" onclick="eliminaFile('${nome}')">
+            <i class="bi bi-trash3"></i> Elimina
+          </button>
+          <button class="btn-confirm-no" onclick="this.closest('.delete-confirm').remove()">
+            Annulla
+          </button>
+        </div>`;
+
+      item.insertAdjacentElement('afterend', confirm);
+    }
+
+    // ── Elimina singolo file ──
+    async function eliminaFile(nome) {
+      document.querySelectorAll('.delete-confirm').forEach(el => el.remove());
+
+      try {
+        const res = await fetch(`/files/${encodeURIComponent(nome)}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const err = await res.json();
+          toast('❌ ' + err.errore, 'error');
+          return;
+        }
+        toast(`🗑️ "${nome}" eliminato`, 'success');
+        caricaFileList();
+      } catch {
+        toast('❌ Errore di connessione', 'error');
+      }
+    }
+
+    // ── Elimina tutti ──
+    async function eliminaTutti() {
+      if (!confirm('Eliminare tutti i file scaricati? L\'operazione non è reversibile.')) return;
+
+      try {
+        const res   = await fetch('/files');
+        const files = await res.json();
+
+        if (!Array.isArray(files) || files.length === 0) return;
+
+        await Promise.all(files.map(f =>
+          fetch(`/files/${encodeURIComponent(f.nome)}`, { method: 'DELETE' })
+        ));
+
+        toast(`🗑️ Tutti i file eliminati`, 'success');
+        caricaFileList();
+      } catch {
+        toast('❌ Errore durante l\'eliminazione', 'error');
+      }
+    }
+
+    // ── Toast notification ──
+    function toast(testo, tipo = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast-msg ${tipo}`;
+      el.textContent = testo;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    // ── Messaggio inline ──
     function mostraMessaggio(testo, tipo) {
       const msg = document.getElementById('messaggio');
       msg.textContent = testo;
       msg.className   = `alert alert-${tipo} mt-3`;
       msg.classList.remove('d-none');
+      setTimeout(() => msg.classList.add('d-none'), 5000);
     }
+
+    // ── Init ──
+    caricaFileList();
   </script>
 
 </body>

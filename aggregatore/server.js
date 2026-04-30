@@ -2,9 +2,19 @@ const express = require('express');
 const multer  = require('multer');
 const xml2js  = require('xml2js');
 const path    = require('path');
+const fs      = require('fs');
 
 const app  = express();
 const PORT = 3000;
+
+// ============================
+//  CARTELLA OUTPUT
+// ============================
+
+const OUTPUT_DIR = path.join(__dirname, 'output');
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR);
+}
 
 app.use(express.static('public'));
 
@@ -12,7 +22,6 @@ app.use(express.static('public'));
 //  MULTER – caricamento file
 // ============================
 
-// Salva il file in memoria (Buffer), non su disco
 const storage = multer.memoryStorage();
 const upload  = multer({
   storage,
@@ -31,39 +40,29 @@ const upload  = multer({
 //  FUNZIONI DI PARSING
 // ============================
 
-// Legge un CSV e restituisce un array di oggetti
 function parseCSV(testo) {
   const righe = testo.trim().split('\n');
   const intestazione = righe.shift().split(',').map(c => c.trim());
-
   return righe
     .filter(r => r.trim() !== '')
     .map(riga => {
       const valori = riga.split(',').map(v => v.trim());
       const oggetto = {};
-      intestazione.forEach((col, i) => {
-        oggetto[col] = valori[i] ?? '';
-      });
+      intestazione.forEach((col, i) => { oggetto[col] = valori[i] ?? ''; });
       return oggetto;
     });
 }
 
-// Legge un XML e restituisce un array di oggetti (Promise)
 function parseXML(testo) {
   return new Promise((resolve, reject) => {
     xml2js.parseString(testo, { explicitArray: false }, (err, result) => {
       if (err) return reject(err);
-
-      // Prende il primo figlio della radice come array di record
       const radice = result;
       const chiaveRadice = Object.keys(radice)[0];
       const sotto = radice[chiaveRadice];
       const chiaveSotto = Object.keys(sotto)[0];
       let records = sotto[chiaveSotto];
-
-      // xml2js restituisce un oggetto se c'è un solo elemento
       if (!Array.isArray(records)) records = [records];
-
       resolve(records);
     });
   });
@@ -73,12 +72,10 @@ function parseXML(testo) {
 //  FUNZIONI DI CONVERSIONE
 // ============================
 
-// Array di oggetti → JSON
 function convertiInJSON(dati) {
   return JSON.stringify(dati, null, 2);
 }
 
-// Array di oggetti → CSV
 function convertiInCSV(dati) {
   if (dati.length === 0) return '';
   const intestazione = Object.keys(dati[0]);
@@ -87,7 +84,6 @@ function convertiInCSV(dati) {
   return [header, ...righe].join('\n');
 }
 
-// Array di oggetti → XML
 function convertiInXML(dati, nomeRadice = 'dati', nomeRecord = 'record') {
   const builder = new xml2js.Builder({ rootName: nomeRadice });
   const obj = { [nomeRecord]: dati };
@@ -95,7 +91,56 @@ function convertiInXML(dati, nomeRadice = 'dati', nomeRecord = 'record') {
 }
 
 // ============================
-//  ROUTE PRINCIPALE
+//  ROUTE: LISTA FILE
+// ============================
+
+app.get('/files', (req, res) => {
+  try {
+    const files = fs.readdirSync(OUTPUT_DIR).map(nome => {
+      const filePath = path.join(OUTPUT_DIR, nome);
+      const stats = fs.statSync(filePath);
+      return { nome, dimensione: stats.size, data: stats.mtime.toISOString() };
+    });
+    files.sort((a, b) => new Date(b.data) - new Date(a.data));
+    res.json(files);
+  } catch (err) {
+    res.status(500).json({ errore: 'Impossibile leggere la lista dei file.' });
+  }
+});
+
+// ============================
+//  ROUTE: SCARICA FILE
+// ============================
+
+app.get('/files/:nome', (req, res) => {
+  const nomeFile = path.basename(req.params.nome);
+  const filePath = path.join(OUTPUT_DIR, nomeFile);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ errore: 'File non trovato.' });
+  }
+  res.download(filePath);
+});
+
+// ============================
+//  ROUTE: ELIMINA FILE
+// ============================
+
+app.delete('/files/:nome', (req, res) => {
+  const nomeFile = path.basename(req.params.nome);
+  const filePath = path.join(OUTPUT_DIR, nomeFile);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ errore: 'File non trovato.' });
+  }
+  try {
+    fs.unlinkSync(filePath);
+    res.json({ messaggio: 'File eliminato con successo.' });
+  } catch (err) {
+    res.status(500).json({ errore: 'Impossibile eliminare il file.' });
+  }
+});
+
+// ============================
+//  ROUTE PRINCIPALE: CONVERTI
 // ============================
 
 app.post('/converti', upload.single('file'), async (req, res) => {
@@ -110,15 +155,14 @@ app.post('/converti', upload.single('file'), async (req, res) => {
     return res.status(400).json({ errore: 'Formato di destinazione non valido.' });
   }
 
-  const testo        = req.file.buffer.toString('utf-8');
-  const estOrigine   = path.extname(req.file.originalname).toLowerCase().replace('.', '');
-  let dati           = [];
+  const testo      = req.file.buffer.toString('utf-8');
+  const estOrigine = path.extname(req.file.originalname).toLowerCase().replace('.', '');
+  let dati         = [];
 
-  // ── PARSING (da qualunque formato a array di oggetti) ──
   try {
     if (estOrigine === 'json') {
       dati = JSON.parse(testo);
-      if (!Array.isArray(dati)) dati = [dati]; // gestisce anche oggetto singolo
+      if (!Array.isArray(dati)) dati = [dati];
     } else if (estOrigine === 'csv') {
       dati = parseCSV(testo);
     } else if (estOrigine === 'xml') {
@@ -130,10 +174,8 @@ app.post('/converti', upload.single('file'), async (req, res) => {
     return res.status(400).json({ errore: 'Errore nel leggere il file: ' + err.message });
   }
 
-  // ── CONVERSIONE (da array di oggetti al formato scelto) ──
-  let risultato    = '';
-  let contentType  = 'text/plain';
-  let nomeFile     = 'risultato.' + formatoDestinazione;
+  let risultato   = '';
+  let contentType = 'text/plain';
 
   try {
     if (formatoDestinazione === 'json') {
@@ -150,9 +192,20 @@ app.post('/converti', upload.single('file'), async (req, res) => {
     return res.status(500).json({ errore: 'Errore nella conversione: ' + err.message });
   }
 
-  console.log(`Convertito ${estOrigine.toUpperCase()} → ${formatoDestinazione.toUpperCase()}`);
+  // Salva su disco
+  const nomeOrig  = path.basename(req.file.originalname, path.extname(req.file.originalname));
+  const timestamp = Date.now();
+  const nomeFile  = `${nomeOrig}_convertito_${timestamp}.${formatoDestinazione}`;
+  const filePath  = path.join(OUTPUT_DIR, nomeFile);
 
-  // Manda il file convertito come download
+  try {
+    fs.writeFileSync(filePath, risultato, 'utf-8');
+  } catch (err) {
+    return res.status(500).json({ errore: 'Errore nel salvare il file: ' + err.message });
+  }
+
+  console.log(`Convertito ${estOrigine.toUpperCase()} → ${formatoDestinazione.toUpperCase()} → ${nomeFile}`);
+
   res.setHeader('Content-Disposition', `attachment; filename="${nomeFile}"`);
   res.setHeader('Content-Type', contentType);
   res.send(risultato);
