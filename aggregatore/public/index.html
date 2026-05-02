@@ -319,9 +319,7 @@
 </head>
 <body>
 
-  <!-- ══════════════════════════════════
-       SIDEBAR SINISTRA
-  ══════════════════════════════════ -->
+  <!--SIDEBAR SINISTRA-->
   <nav id="sidebar">
     <div id="sidebar-header">
       <h6>Convertitore File</h6>
@@ -342,9 +340,7 @@
     </div>
   </nav>
 
-  <!-- ══════════════════════════════════
-       CONTENUTO PRINCIPALE
-  ══════════════════════════════════ -->
+  <!--CONTENUTO PRINCIPALE-->
   <div id="main-content">
 
     <h1 class="main-title mb-1">🔄 Convertitore File</h1>
@@ -398,7 +394,7 @@
     fileInput.addEventListener('change', aggiornaStato);
     formatoSel.addEventListener('change', aggiornaStato);
 
-    // ── Aggiorna stato bottone Converti ──
+    // Aggiorna lo stato del bottone Converti verificando se sia file che formato sono stati selezionati, mostra info del file
     function aggiornaStato() {
       const file    = fileInput.files[0];
       const formato = formatoSel.value;
@@ -418,7 +414,7 @@
       btnConv.disabled = !(file && formato);
     }
 
-    // ── Conversione ──
+    // Invia il file al server per la conversione nel formato richiesto e gestisce il download del risultato
     async function converti() {
       const file    = fileInput.files[0];
       const formato = formatoSel.value;
@@ -435,6 +431,7 @@
       formData.append('file', file);
       formData.append('formatoDestinazione', formato);
 
+      // Prova a inviare il file al server e gestisci errori di rete o conversione
       try {
         const res = await fetch('/converti', { method: 'POST', body: formData });
 
@@ -467,12 +464,13 @@
       }
     }
 
-    // ── Carica lista file nella sidebar ──
+    // Recupera la lista dei file convertiti dal server e li visualizza nella sidebar con informazioni di dimensione e data
     async function caricaFileList() {
       const wrapper = document.getElementById('file-list-wrapper');
       const count   = document.getElementById('sidebar-count');
       const btnClear = document.getElementById('btn-clear-all');
 
+      // Prova a recuperare la lista dei file dal server e gestisci errori di rete
       try {
         const res   = await fetch('/files');
         const files = await res.json();
@@ -525,7 +523,7 @@
       }
     }
 
-    // ── Scarica file dalla lista ──
+    // Crea un link di download e scarica il file selezionato dalla lista
     function scaricaFile(nome) {
       const link = document.createElement('a');
       link.href  = `/files/${encodeURIComponent(nome)}`;
@@ -534,7 +532,7 @@
       toast(`⬇️ Download di ${nome}`, 'success');
     }
 
-    // ── Conferma eliminazione ──
+    // Mostra una finestra di conferma per chiedere all'utente prima di eliminare un file
     function chiediConfermaElimina(nome) {
       // Rimuovi eventuali conferme già aperte
       document.querySelectorAll('.delete-confirm').forEach(el => el.remove());
@@ -558,10 +556,11 @@
       item.insertAdjacentElement('afterend', confirm);
     }
 
-    // ── Elimina singolo file ──
+    // Invia una richiesta DELETE al server per eliminare un singolo file dalla lista
     async function eliminaFile(nome) {
       document.querySelectorAll('.delete-confirm').forEach(el => el.remove());
 
+      // Prova a inviare la richiesta di eliminazione al server e gestisci errori di rete
       try {
         const res = await fetch(`/files/${encodeURIComponent(nome)}`, { method: 'DELETE' });
         if (!res.ok) {
@@ -576,10 +575,11 @@
       }
     }
 
-    // ── Elimina tutti ──
+    // Chiede conferma e quindi elimina tutti i file dalla lista in una sola operazione
     async function eliminaTutti() {
       if (!confirm('Eliminare tutti i file scaricati? L\'operazione non è reversibile.')) return;
 
+      // Prova a ottenere la lista dei file e eliminarli tutti in parallelo, gestisce errori di rete
       try {
         const res   = await fetch('/files');
         const files = await res.json();
@@ -597,7 +597,7 @@
       }
     }
 
-    // ── Toast notification ──
+    // Mostra una notifica toast temporanea nell'angolo basso destro dello schermo
     function toast(testo, tipo = 'success') {
       const container = document.getElementById('toast-container');
       const el = document.createElement('div');
@@ -607,7 +607,7 @@
       setTimeout(() => el.remove(), 3000);
     }
 
-    // ── Messaggio inline ──
+    // Mostra un messaggio alert inline nella sezione principale che scompare dopo 5 secondi
     function mostraMessaggio(testo, tipo) {
       const msg = document.getElementById('messaggio');
       msg.textContent = testo;
@@ -616,7 +616,7 @@
       setTimeout(() => msg.classList.add('d-none'), 5000);
     }
 
-    // ── Init ──
+    // Inizializza l'applicazione caricando la lista dei file al primo accesso
     caricaFileList();
   </script>
 

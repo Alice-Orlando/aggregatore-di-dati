@@ -7,20 +7,12 @@ const fs      = require('fs');
 const app  = express();
 const PORT = 3000;
 
-// ============================
-//  CARTELLA OUTPUT
-// ============================
-
 const OUTPUT_DIR = path.join(__dirname, 'output');
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR);
 }
 
 app.use(express.static('public'));
-
-// ============================
-//  MULTER – caricamento file
-// ============================
 
 const storage = multer.memoryStorage();
 const upload  = multer({
@@ -36,10 +28,7 @@ const upload  = multer({
   }
 });
 
-// ============================
-//  FUNZIONI DI PARSING
-// ============================
-
+// Analizza un testo CSV e lo converte in un array di oggetti, usando la prima riga come intestazione delle colonne
 function parseCSV(testo) {
   const righe = testo.trim().split('\n');
   const intestazione = righe.shift().split(',').map(c => c.trim());
@@ -53,6 +42,7 @@ function parseCSV(testo) {
     });
 }
 
+// Analizza un testo XML e lo converte in un array di record estraendo la struttura gerarchica
 function parseXML(testo) {
   return new Promise((resolve, reject) => {
     xml2js.parseString(testo, { explicitArray: false }, (err, result) => {
@@ -68,14 +58,12 @@ function parseXML(testo) {
   });
 }
 
-// ============================
-//  FUNZIONI DI CONVERSIONE
-// ============================
-
+// Converte un array di dati in formato JSON con formattazione leggibile
 function convertiInJSON(dati) {
   return JSON.stringify(dati, null, 2);
 }
 
+// Converte un array di oggetti in formato CSV con intestazioni prese dalle chiavi del primo oggetto
 function convertiInCSV(dati) {
   if (dati.length === 0) return '';
   const intestazione = Object.keys(dati[0]);
@@ -84,17 +72,16 @@ function convertiInCSV(dati) {
   return [header, ...righe].join('\n');
 }
 
+// Converte un array di dati in formato XML con nomi personalizzabili per l'elemento radice e i record
 function convertiInXML(dati, nomeRadice = 'dati', nomeRecord = 'record') {
   const builder = new xml2js.Builder({ rootName: nomeRadice });
   const obj = { [nomeRecord]: dati };
   return builder.buildObject(obj);
 }
 
-// ============================
-//  ROUTE: LISTA FILE
-// ============================
-
+// Recupera la lista di tutti i file salvati nella cartella output con dettagli di dimensione e data
 app.get('/files', (req, res) => {
+  // Prova a leggere i file dalla cartella output e gestisci eventuali errori di file system
   try {
     const files = fs.readdirSync(OUTPUT_DIR).map(nome => {
       const filePath = path.join(OUTPUT_DIR, nome);
@@ -108,10 +95,7 @@ app.get('/files', (req, res) => {
   }
 });
 
-// ============================
-//  ROUTE: SCARICA FILE
-// ============================
-
+// Scarica un file specifico dalla cartella output dal server al client
 app.get('/files/:nome', (req, res) => {
   const nomeFile = path.basename(req.params.nome);
   const filePath = path.join(OUTPUT_DIR, nomeFile);
@@ -121,16 +105,14 @@ app.get('/files/:nome', (req, res) => {
   res.download(filePath);
 });
 
-// ============================
-//  ROUTE: ELIMINA FILE
-// ============================
-
+// Elimina un file specifico dalla cartella output
 app.delete('/files/:nome', (req, res) => {
   const nomeFile = path.basename(req.params.nome);
   const filePath = path.join(OUTPUT_DIR, nomeFile);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ errore: 'File non trovato.' });
   }
+  // Prova a eliminare il file e gestisci errori di file system
   try {
     fs.unlinkSync(filePath);
     res.json({ messaggio: 'File eliminato con successo.' });
@@ -139,10 +121,7 @@ app.delete('/files/:nome', (req, res) => {
   }
 });
 
-// ============================
-//  ROUTE PRINCIPALE: CONVERTI
-// ============================
-
+// Elabora il caricamento di un file, lo converte nel formato richiesto e lo salva su disco, poi lo invia al client
 app.post('/converti', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ errore: 'Nessun file caricato.' });
@@ -159,6 +138,7 @@ app.post('/converti', upload.single('file'), async (req, res) => {
   const estOrigine = path.extname(req.file.originalname).toLowerCase().replace('.', '');
   let dati         = [];
 
+  // Prova a parsare il file nel formato sorgente (JSON, CSV o XML) e gestisci errori di parsing
   try {
     if (estOrigine === 'json') {
       dati = JSON.parse(testo);
@@ -177,6 +157,7 @@ app.post('/converti', upload.single('file'), async (req, res) => {
   let risultato   = '';
   let contentType = 'text/plain';
 
+  // Prova a convertire i dati nel formato di destinazione e gestisci errori di conversione
   try {
     if (formatoDestinazione === 'json') {
       risultato   = convertiInJSON(dati);
@@ -198,6 +179,7 @@ app.post('/converti', upload.single('file'), async (req, res) => {
   const nomeFile  = `${nomeOrig}_convertito_${timestamp}.${formatoDestinazione}`;
   const filePath  = path.join(OUTPUT_DIR, nomeFile);
 
+  // Prova a salvare il file convertito su disco e gestisci errori di file system
   try {
     fs.writeFileSync(filePath, risultato, 'utf-8');
   } catch (err) {
@@ -211,18 +193,12 @@ app.post('/converti', upload.single('file'), async (req, res) => {
   res.send(risultato);
 });
 
-// ============================
-//  404
-// ============================
-
+// Gestisce gli errori 404 per tutte le route non trovate
 app.use((req, res) => {
   res.status(404).send('<h1>404 - Pagina non trovata</h1>');
 });
 
-// ============================
-//  AVVIO SERVER
-// ============================
-
+// Avvia il server in ascolto sulla porta specificata
 app.listen(PORT, () => {
   console.log(`Server in esecuzione su http://localhost:${PORT}`);
 });
